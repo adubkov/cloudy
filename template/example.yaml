@@ -1,173 +1,175 @@
+{% set key_data = 'KEY_DATA' %}
+
 name: production
 provider:
     name: aws
-    acess_key: {{ aws.access_key }}
-    secret_key: {{ aws.access_key }}
+    acess_key: aws.access_key
+    secret_key: aws.access_key
 
 us-west-1:
 
     key:
-        prodkey: 'KEY_DATA'
+        prodkey: {{ key_data }}
 
     vpc:
         prd-sjc:
-            cidr_block: ['10.222.0.0/16']
+            cidr_block: '10.222.0.0/16'
             enable_dns_support: True
             enable_dns_hostnames: True
 
     subnet:
         public-1a:
-            cidr_block: ['10.222.0.0/22']
-            vpc: {{ vpc.prd-sjc }}
-            route_table: {{ route_table.public-1a }}
+            cidr_block: '10.222.0.0/22'
+            vpc: vpc.prd-sjc
+            route_table: route_table.public-1a
             map_public_ip_on_launch: True
             availability_zone: ap-southeast-1a
 
         public-1b:
-            cidr_block: ['10.222.12.0/22']
-            vpc: {{ vpc.prd-sjc }}
-            route_table: {{ route_table.public-1b }}
+            cidr_block: '10.222.12.0/22'
+            vpc: vpc.prd-sjc
+            #route_table: route_table.public-1b
             map_public_ip_on_launch: True
             availability_zone: ap-southeast-1b
 
         private-1a:
-            cidr_block: ['10.222.4.0/22']
-            vpc: {{ vpc.prd-sjc }}
-            route_table: {{ route_table.public-1a }}
+            cidr_block: '10.222.4.0/22'
+            vpc: vpc.prd-sjc
+            route_table: route_table.private-1a
             map_public_ip_on_launch: True
             availability_zone: ap-southeast-1a
 
         private-1b:
-            cidr_block: ['10.222.8.0/22']
-            vpc: {{ vpc.prd-sjc }}
-            route_table: {{ route_table.public-1b }}
+            cidr_block: '10.222.8.0/22'
+            vpc: vpc.prd-sjc
+            route_table: route_table.private-1b
             map_public_ip_on_launch: True
             availability_zone: ap-southeast-1b
 
     internet_gateway:
-        igw: {{ vpc.prd-sjc }}
+        igw: vpc.prd-sjc
 
     route_table:
         public-1a:
-            vpc: {{ vpc.prd-sjc }}
+            vpc: vpc.prd-sjc
             routes:
                 -
                     cidr_block: "0.0.0.0/0"
-                    gateway: {{ internet_gateway.igw }}
+                    gateway: internet_gateway.igw
                 -
                     cidr_block: "10.223.0.0/0"
-                    gateway: {{ instance.tunnel }}
+                    gateway: instance.tunnel
         public-1b:
-            vpc: {{ vpc.prd-sjc }}
+            vpc: vpc.prd-sjc
             routes:
                 -
                     cidr_block: "0.0.0.0/0"
-                    gateway: {{ internet_gateway.igw }}
+                    gateway: internet_gateway.igw
                 -
                     cidr_block: "10.223.0.0/0"
-                    gateway: {{ instance.tunnel }}
+                    gateway: instance.tunnel
         private-1a:
-            vpc: {{ vpc.prd-sjc }}
+            vpc: vpc.prd-sjc
             routes:
                 -
                     cidr_block: "0.0.0.0/0"
-                    gateway: {{ instance.nat }}
+                    gateway: instance.nat
                 -
                     cidr_block: "10.223.0.0/0"
-                    gateway: {{ instance.tunnel }}
+                    gateway: instance.tunnel
         private-1b:
-            vpc: {{ vpc.prd-sjc }}
+            vpc: vpc.prd-sjc
             routes:
                 -
                     cidr_block: "0.0.0.0/0"
-                    gateway: {{ instance.nat }}
+                    gateway: instance.nat
                 -
                     cidr_block: "10.223.0.0/0"
-                    gateway: {{ instance.tunnel }}
+                    gateway: instance.tunnel
 
     security_group:
         nat:
             description: "NAT boxes firewall"
-            vpc: {{ vpc.prd-sjc }}
+            vpc: vpc.prd-sjc
             ingress:
                 -
                     port: 0-65535
                     protocol: tcp
                     cidr_blocks:
-                        "10.220.0.0/16"
+                        - "10.220.0.0/16"
                 -
                     protocol: icmp
                     cidr_blocks:
-                        "10.220.0.0/8"
+                        - "10.220.0.0/8"
 
         tunnel:
             description: "Tunnel boxes firewall"
-            vpc: {{ vpc.prd-sjc }}
+            vpc: vpc.prd-sjc
             ingress:
                 -
                     port: 22
                     protocol: tcp
                     cidr_blocks:
-                        "0.0.0.0/0"
+                        - "0.0.0.0/0"
                 -
                     port: 0-65535
                     cidr_blocks:
-                        "10.220.0.0/16"
+                        - "10.220.0.0/16"
                 -
                     port: 1195
                     protocol: udp
                     cidr_blocks:
-                        "54.193.122.255/32"
+                        - "54.193.122.255/32"
                 -
                     protocol: icmp
                     cidr_blocks:
-                        "10.220.0.0/8"
+                        - "10.220.0.0/8"
 
     instance:
         nat-1a:
             ami: ami-6aa38238
             type: "t2.medium"
-            subnet: {{ subnet.public-1a }}
+            subnet: subnet.public-1a
             associate_public_ip: True
             source_dest_check: False
-            security_groups:
-                {{ security_group.nat }}
-            key: {{ key.prodkey }}
+            security_group:
+                - security_group.nat
+            key: key.prodkey
             tags:
                 name: prd-sjc-nat-1a
 
         nat-1b:
             ami: ami-6aa38238
             type: "t2.medium"
-            subnet: {{ subnet.public-1b }}
+            subnet: subnet.public-1b
             associate_public_ip: True
             source_dest_check: False
-            security_groups:
-                {{ security_group.nat }}
-            key: {{ key.prodkey }}
+            security_group:
+                - security_group.nat
+            key: key.prodkey
             tags:
                 name: prd-sjc-nat-1b
 
         tunnel-1a:
             ami: ami-96bb90c4
             type: "t2.medium"
-            subnet: {{ subnet.public-1b }}
+            subnet: subnet.public-1a
             associate_public_ip: True
             source_dest_check: False
-            security_groups:
-                {{ security_group.tunnel }}
-            key: {{ key.prodkey }}
+            security_group:
+                - security_group.tunnel
+            key: key.prodkey
             tags:
                 name: prd-sjc-tunnel-1a
 
         tunnel-1b:
             ami: ami-96bb90c4
             type: "t2.medium"
-            subnet: {{ subnet.public-1b }}
+            subnet: subnet.public-1b
             associate_public_ip: True
             source_dest_check: False
-            security_groups:
-                {{ security_group.tunnel }}
-            key: {{ key.prodkey }}
+            security_group:
+                - security_group.tunnel
+            key: key.prodkey
             tags:
                 name: prd-sjc-tunnel-1b
